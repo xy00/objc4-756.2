@@ -1189,7 +1189,7 @@ public:
 
 
 struct objc_class : objc_object {
-    // Class ISA;
+    // Class ISA; ISA 中也包含一个 bits 字段，和下面的 bits 字段代表的意义不一样。
     Class superclass;
     cache_t cache;             // formerly cache pointer and vtable
     class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags

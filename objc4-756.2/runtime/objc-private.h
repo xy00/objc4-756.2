@@ -72,6 +72,7 @@ union isa_t {
 };
 
 
+//
 struct objc_object {
 private:
     isa_t isa;
