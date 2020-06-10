@@ -1926,22 +1926,22 @@ static Class realizeClassWithoutSwift(Class cls)
     // fixme verify class is not in an un-dlopened part of the shared cache?
 
     ro = (const class_ro_t *)cls->data();
-    if (ro->flags & RO_FUTURE) {
+    if (ro->flags & RO_FUTURE) {    // rw 已经分配好
         // This was a future class. rw data is already allocated.
         rw = cls->data();
         ro = cls->data()->ro;
         cls->changeInfo(RW_REALIZED|RW_REALIZING, RW_FUTURE);
     } else {
         // Normal class. Allocate writeable class data.
-        rw = (class_rw_t *)calloc(sizeof(class_rw_t), 1);
-        rw->ro = ro;
-        rw->flags = RW_REALIZED|RW_REALIZING;
+        rw = (class_rw_t *)calloc(sizeof(class_rw_t), 1); // 初始化 rw
+        rw->ro = ro;    // 将 ro 赋值给 rw 中的 ro 字段
+        rw->flags = RW_REALIZED|RW_REALIZING;   // 更细标识
         cls->setData(rw);
     }
 
-    isMeta = ro->flags & RO_META;
+    isMeta = ro->flags & RO_META; // 根据 flags 判断是否为元类
 
-    rw->version = isMeta ? 7 : 0;  // old runtime went up to 6
+    rw->version = isMeta ? 7 : 0;  // old runtime went up to 6，元类版本号设置为 7 ，否则为 0
 
 
     // Choose an index for this class.
@@ -1963,8 +1963,8 @@ static Class realizeClassWithoutSwift(Class cls)
     //   or that Swift's initializers have already been called.
     //   fixme that assumption will be wrong if we add support
     //   for ObjC subclasses of Swift classes.
-    supercls = realizeClassWithoutSwift(remapClass(cls->superclass));
-    metacls = realizeClassWithoutSwift(remapClass(cls->ISA()));
+    supercls = realizeClassWithoutSwift(remapClass(cls->superclass));   // 初始化父类
+    metacls = realizeClassWithoutSwift(remapClass(cls->ISA()));         // 初始化 isa 指向的类
 
 #if SUPPORT_NONPOINTER_ISA
     // Disable non-pointer isa for some classes and/or platforms.
@@ -2002,8 +2002,8 @@ static Class realizeClassWithoutSwift(Class cls)
 #endif
 
     // Update superclass and metaclass in case of remapping
-    cls->superclass = supercls;
-    cls->initClassIsa(metacls);
+    cls->superclass = supercls; // 更新父类
+    cls->initClassIsa(metacls); // 更新 isa
 
     // Reconcile instance variable offsets / layout.
     // This may reallocate class_ro_t, updating our ro variable.
@@ -2035,6 +2035,8 @@ static Class realizeClassWithoutSwift(Class cls)
         addRootClass(cls);
     }
 
+    // 到目前为止 rw 中的 method list、protocol list、property list 都是空的
+    // 下面的方法中会对这些参数进行赋值
     // Attach categories
     methodizeClass(cls);
 

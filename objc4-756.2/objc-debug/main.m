@@ -93,7 +93,7 @@ int main(int argc, const char * argv[]) {
             Ivar var = vars[i];
             NSString *name = [[NSString alloc] initWithCString:ivar_getName(var) encoding:NSUTF8StringEncoding];
             NSString *type = [[NSString alloc] initWithCString:ivar_getTypeEncoding(var) encoding:NSUTF8StringEncoding];
-            ptrdiff_t offset = ivar_getOffset(var);
+//            ptrdiff_t offset = ivar_getOffset(var);
             NSLog(@"name: %@, type: %@", name, type);
             
         }

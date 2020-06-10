@@ -528,7 +528,7 @@ struct locstamped_category_list_t {
 //   _tryRetain/_isDeallocating/retainWeakReference/allowsWeakReference
 #define FAST_HAS_DEFAULT_RR     (1UL<<2)
 // data pointer
-#define FAST_DATA_MASK          0x00007ffffffffff8UL
+#define FAST_DATA_MASK          0x00007ffffffffff8UL // OC 中一个指针的长度是 47，最后三位是占位符，所以才取地址的时候会忽略最后三位
 
 #else
 // Leaks-incompatible version that steals lots of bits.
@@ -973,6 +973,7 @@ private:
 
 public:
 
+    // 获取指针的内存地址
     class_rw_t* data() {
         return (class_rw_t *)(bits & FAST_DATA_MASK);
     }
@@ -1192,6 +1193,8 @@ struct objc_class : objc_object {
     // Class ISA; ISA 中也包含一个 bits 字段，和下面的 bits 字段代表的意义不一样。
     Class superclass;
     cache_t cache;             // formerly cache pointer and vtable
+    // 在编译后 class_data_bits_t 指向的是 class_ro_t 的地址，这个结构是只读的，
+    // 在运行时，才回通过 realizeClass 函数将 bits 指向 class_rw_t
     class_data_bits_t bits;    // class_rw_t * plus custom rr/alloc flags
 
     class_rw_t *data() { 
@@ -1383,6 +1386,7 @@ struct objc_class : objc_object {
     IMP getLoadMethod();
 
     // Locking: To prevent concurrent realization, hold runtimeLock.
+    // 判断是否已经 realization，根据 flags 的 31 位来判断
     bool isRealized() {
         return data()->flags & RW_REALIZED;
     }
