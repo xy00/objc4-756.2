@@ -97,6 +97,17 @@ int main(int argc, const char * argv[]) {
             NSLog(@"name: %@, type: %@", name, type);
             
         }
+        
+        Class testClass = objc_allocateClassPair(SubMethodTest.class, "TestClass", 0);
+        BOOL isAdded = class_addIvar(testClass, "pwd", sizeof(NSString *), log2(sizeof(NSString *)), @encode(NSString *));
+        objc_registerClassPair(testClass);
+        if (isAdded)
+        {
+            id obj = [[testClass alloc] init];
+            [obj setValue:@"TEST" forKey:@"pwd"];
+            NSString *value = [obj valueForKey:@"pwd"];
+            NSLog(@"value: %@", value);
+        }
     }
     return 0;
 }

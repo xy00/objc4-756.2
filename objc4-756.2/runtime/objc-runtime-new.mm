@@ -6111,8 +6111,7 @@ addMethod(Class cls, SEL name, IMP imp, const char *types, bool replace)
         // fixme optimize
         method_list_t *newlist;
         newlist = (method_list_t *)calloc(sizeof(*newlist), 1);
-        newlist->entsizeAndFlags = 
-            (uint32_t)sizeof(method_t) | fixed_up_method_list;
+        newlist->entsizeAndFlags = (uint32_t)sizeof(method_t) | fixed_up_method_list;
         newlist->count = 1;
         newlist->first.name = name;
         newlist->first.types = strdupIfMutable(types);
@@ -7129,8 +7128,8 @@ void *objc_destructInstance(id obj)
 {
     if (obj) {
         // Read all of the flags at once for performance.
-        bool cxx = obj->hasCxxDtor();
-        bool assoc = obj->hasAssociatedObjects();
+        bool cxx = obj->hasCxxDtor();   // 判断是有有 OC 或者 C++ 的析构函数
+        bool assoc = obj->hasAssociatedObjects();   // 判断对象是否有相关联的引用
 
         // This order is important.
         if (cxx) object_cxxDestruct(obj);

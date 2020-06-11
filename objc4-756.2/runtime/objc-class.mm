@@ -441,15 +441,17 @@ static void object_cxxDestructFromClass(id obj, Class cls)
 
     // Call cls's dtor first, then superclasses's dtors.
 
+    // 从当前类开始遍历，知道遍历到根类
     for ( ; cls; cls = cls->superclass) {
-        if (!cls->hasCxxDtor()) return; 
-        dtor = (void(*)(id))
-            lookupMethodInClassAndLoadCache(cls, SEL_cxx_destruct);
+        if (!cls->hasCxxDtor()) return;
+        // SEL_cxx_destruct 代表 .cxx_destruct 的 selector
+        dtor = (void(*)(id))lookupMethodInClassAndLoadCache(cls, SEL_cxx_destruct);
         if (dtor != (void(*)(id))_objc_msgForward_impcache) {
             if (PrintCxxCtors) {
                 _objc_inform("CXX: calling C++ destructors for class %s", 
                              cls->nameForLogging());
             }
+            // 获取到 .cxx_destruct 的函数指针并调用
             (*dtor)(obj);
         }
     }
