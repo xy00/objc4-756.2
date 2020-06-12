@@ -2620,9 +2620,10 @@ readProtocol(protocol_t *newproto, Class protocol_class,
     // but it does prevent crashes when looking up unrelated protocols.
     auto insertFn = headerIsBundle ? NXMapKeyCopyingInsert : NXMapInsert;
 
+    // 根据 mangledName 去 hash 表中获取已经初始化的 protocol
     protocol_t *oldproto = (protocol_t *)getProtocol(newproto->mangledName);
 
-    if (oldproto) {
+    if (oldproto) { // 已经初始化
         // Some other definition already won.
         if (PrintProtocols) {
             _objc_inform("PROTOCOLS: protocol at %p is %s  "
@@ -2630,13 +2631,12 @@ readProtocol(protocol_t *newproto, Class protocol_class,
                          newproto, oldproto->nameForLogging(), oldproto);
         }
     }
-    else if (headerIsPreoptimized) {
+    else if (headerIsPreoptimized) {    // 已经初始化好了？
         // Shared cache initialized the protocol object itself, 
         // but in order to allow out-of-cache replacement we need 
         // to add it to the protocol table now.
 
-        protocol_t *cacheproto = (protocol_t *)
-            getPreoptimizedProtocol(newproto->mangledName);
+        protocol_t *cacheproto = (protocol_t *)getPreoptimizedProtocol(newproto->mangledName);
         protocol_t *installedproto;
         if (cacheproto  &&  cacheproto != newproto) {
             // Another definition in the shared cache wins (because 
@@ -2650,8 +2650,7 @@ readProtocol(protocol_t *newproto, Class protocol_class,
         
         assert(installedproto->getIsa() == protocol_class);
         assert(installedproto->size >= sizeof(protocol_t));
-        insertFn(protocol_map, installedproto->mangledName, 
-                 installedproto);
+        insertFn(protocol_map, installedproto->mangledName, installedproto); // 插入到 hash 表中
         
         if (PrintProtocols) {
             _objc_inform("PROTOCOLS: protocol at %p is %s", 
@@ -2668,8 +2667,8 @@ readProtocol(protocol_t *newproto, Class protocol_class,
         // New protocol from an un-preoptimized image
         // with sufficient storage. Fix it up in place.
         // fixme duplicate protocols from unloadable bundle
-        newproto->initIsa(protocol_class);  // fixme pinned
-        insertFn(protocol_map, newproto->mangledName, newproto);
+        newproto->initIsa(protocol_class);  // fixme pinned // 初始化 isa
+        insertFn(protocol_map, newproto->mangledName, newproto); // 插入到 hash 表中
         if (PrintProtocols) {
             _objc_inform("PROTOCOLS: protocol at %p is %s",
                          newproto, newproto->nameForLogging());
@@ -2680,12 +2679,12 @@ readProtocol(protocol_t *newproto, Class protocol_class,
         // with insufficient storage. Reallocate it.
         // fixme duplicate protocols from unloadable bundle
         size_t size = max(sizeof(protocol_t), (size_t)newproto->size);
-        protocol_t *installedproto = (protocol_t *)calloc(size, 1);
+        protocol_t *installedproto = (protocol_t *)calloc(size, 1); // 初始化 protocol_t
         memcpy(installedproto, newproto, newproto->size);
         installedproto->size = (typeof(installedproto->size))size;
         
-        installedproto->initIsa(protocol_class);  // fixme pinned
-        insertFn(protocol_map, installedproto->mangledName, installedproto);
+        installedproto->initIsa(protocol_class);  // fixme pinned   // 初始化 isa
+        insertFn(protocol_map, installedproto->mangledName, installedproto); // 插入到 hash 表中
         if (PrintProtocols) {
             _objc_inform("PROTOCOLS: protocol at %p is %s  ", 
                          installedproto, installedproto->nameForLogging());
@@ -2860,10 +2859,10 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             if (hi->isPreoptimized()) continue;
             
             bool isBundle = hi->isBundle();
-            SEL *sels = _getObjc2SelectorRefs(hi, &count);
+            SEL *sels = _getObjc2SelectorRefs(hi, &count); // 获取 SEL 列表
             UnfixedSelectors += count;
             for (i = 0; i < count; i++) {
-                const char *name = sel_cname(sels[i]);
+                const char *name = sel_cname(sels[i]); // 获取 SEL 名称
                 sels[i] = sel_registerNameNoLock(name, isBundle);
             }
         }
@@ -2898,10 +2897,10 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         bool isPreoptimized = hi->isPreoptimized();
         bool isBundle = hi->isBundle();
 
+        // 从编译器中读取并初始化 protocol
         protocol_t **protolist = _getObjc2ProtocolList(hi, &count);
         for (i = 0; i < count; i++) {
-            readProtocol(protolist[i], cls, protocol_map, 
-                         isPreoptimized, isBundle);
+            readProtocol(protolist[i], cls, protocol_map, isPreoptimized, isBundle);
         }
     }
 
@@ -3774,6 +3773,7 @@ protocol_conformsToProtocol_nolock(protocol_t *self, protocol_t *other)
 
     // protocols need not be fixed up
 
+    // 协议名称一样
     if (0 == strcmp(self->mangledName, other->mangledName)) {
         return YES;
     }
@@ -4031,6 +4031,7 @@ objc_allocateProtocol(const char *name)
 
     protocol_t *result = (protocol_t *)calloc(sizeof(protocol_t), 1);
 
+    // IncompleteProtocol 表示是未完成的 Protocol
     extern objc_class OBJC_CLASS_$___IncompleteProtocol;
     Class cls = (Class)&OBJC_CLASS_$___IncompleteProtocol;
     result->initProtocolIsa(cls);
@@ -4074,9 +4075,9 @@ void objc_registerProtocol(Protocol *proto_gen)
 
     // NOT initProtocolIsa(). The protocol object may already 
     // have been retained and we must preserve that count.
-    proto->changeIsa(cls);
+    proto->changeIsa(cls); // 改变 isa
 
-    NXMapKeyCopyingInsert(protocols(), proto->mangledName, proto);
+    NXMapKeyCopyingInsert(protocols(), proto->mangledName, proto); // 初始化好的 protocol_t 插入的 hash 表中
 }
 
 
@@ -4088,7 +4089,7 @@ void objc_registerProtocol(Protocol *proto_gen)
 * Locking: acquires runtimeLock
 **********************************************************************/
 void 
-protocol_addProtocol(Protocol *proto_gen, Protocol *addition_gen) 
+protocol_addProtocol(Protocol *proto_gen, Protocol *addition_gen) // 向 protocol 中添加 protocol
 {
     protocol_t *proto = newprotocol(proto_gen);
     protocol_t *addition = newprotocol(addition_gen);
@@ -4096,6 +4097,7 @@ protocol_addProtocol(Protocol *proto_gen, Protocol *addition_gen)
     extern objc_class OBJC_CLASS_$___IncompleteProtocol;
     Class cls = (Class)&OBJC_CLASS_$___IncompleteProtocol;
 
+    // 异常情况判断
     if (!proto_gen) return;
     if (!addition_gen) return;
 
@@ -4151,6 +4153,7 @@ protocol_addMethod_nolock(method_list_t*& list, SEL name, const char *types)
     meth.imp = nil;
 }
 
+// 向协议中添加方法定义
 void 
 protocol_addMethodDescription(Protocol *proto_gen, SEL name, const char *types,
                               BOOL isRequiredMethod, BOOL isInstanceMethod) 
@@ -4170,6 +4173,7 @@ protocol_addMethodDescription(Protocol *proto_gen, SEL name, const char *types,
         return;
     }
 
+    // 根据需要添加的方法类型，添加到对应的方法列表中
     if (isRequiredMethod  &&  isInstanceMethod) {
         protocol_addMethod_nolock(proto->instanceMethods, name, types);
     } else if (isRequiredMethod  &&  !isInstanceMethod) {
@@ -4206,6 +4210,7 @@ protocol_addProperty_nolock(property_list_t *&plist, const char *name,
     prop.attributes = copyPropertyAttributeString(attrs, count);
 }
 
+// 向协议中添加 property
 void 
 protocol_addProperty(Protocol *proto_gen, const char *name, 
                      const objc_property_attribute_t *attrs, 
@@ -4228,6 +4233,7 @@ protocol_addProperty(Protocol *proto_gen, const char *name,
         return;
     }
 
+    // 根据不同类型的 property 添加到对应的列表中
     if (isRequiredProperty  &&  isInstanceProperty) {
         protocol_addProperty_nolock(proto->instanceProperties, name, attrs, count);
     }

@@ -134,6 +134,7 @@ static SEL search_builtins(const char *name)
 }
 
 
+// 将 SEL 注册到 hash 表中
 static SEL __sel_registerName(const char *name, bool shouldLock, bool copy) 
 {
     SEL result = 0;

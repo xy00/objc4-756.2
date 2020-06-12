@@ -315,7 +315,7 @@ typedef uintptr_t protocol_ref_t;  // protocol_t *, but unremapped
 // Bits 0..15 are reserved for Swift's use.
 
 #define PROTOCOL_FIXED_UP_MASK (PROTOCOL_FIXED_UP_1 | PROTOCOL_FIXED_UP_2)
-
+// protocol_t 中所有的 isa 指向同一个类 Protocol
 struct protocol_t : objc_object {
     const char *mangledName;
     struct protocol_list_t *protocols;

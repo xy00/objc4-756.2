@@ -102,6 +102,7 @@
     // check isKindOf:
     Class cls;
     Class protoClass = objc_getClass("Protocol");
+    // 判断 other 是否是 Protocol 的之类
     for (cls = object_getClass(other); cls; cls = cls->superclass) {
         if (cls == protoClass) break;
     }
