@@ -2986,10 +2986,10 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
     ts.log("IMAGE TIMES: realize future classes");
 
-    // Discover categories. 
+    // Discover categories.
+    // 处理 ccategory
     for (EACH_HEADER) {
-        category_t **catlist = 
-            _getObjc2CategoryList(hi, &count);
+        category_t **catlist = _getObjc2CategoryList(hi, &count);
         bool hasClassProperties = hi->info()->hasCategoryClassProperties();
 
         for (i = 0; i < count; i++) {
@@ -3013,8 +3013,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             // Then, rebuild the class's method lists (etc) if 
             // the class is realized. 
             bool classExists = NO;
-            if (cat->instanceMethods ||  cat->protocols  
-                ||  cat->instanceProperties) 
+            if (cat->instanceMethods ||  cat->protocols  ||  cat->instanceProperties) 
             {
                 addUnattachedCategoryForClass(cat, cls, hi);
                 if (cls->isRealized()) {
