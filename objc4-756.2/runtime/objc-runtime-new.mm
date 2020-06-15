@@ -2529,7 +2529,11 @@ bool mustReadClasses(header_info *hi)
 Class readClass(Class cls, bool headerIsBundle, bool headerIsPreoptimized)
 {
     const char *mangledName = cls->mangledName();
-    
+    const char *className = "SubMethodTest";
+    if (strcmp(mangledName, className) == 0)
+    {
+        
+    }
     if (missingWeakSuperclass(cls)) {
         // No superclass (probably weak-linked). 
         // Disavow any knowledge of this subclass.
@@ -2789,10 +2793,9 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
         // namedClasses
         // Preoptimized classes don't go in this table.
         // 4/3 is NXMapTable's load factor
-        int namedClassesSize = 
-            (isPreoptimized() ? unoptimizedTotalClasses : totalClasses) * 4 / 3;
-        gdb_objc_realized_classes =
-            NXCreateMapTable(NXStrValueMapPrototype, namedClassesSize);
+        // 实例化存储类的 hash 表
+        int namedClassesSize = (isPreoptimized() ? unoptimizedTotalClasses : totalClasses) * 4 / 3;
+        gdb_objc_realized_classes = NXCreateMapTable(NXStrValueMapPrototype, namedClassesSize);
         
         allocatedClasses = NXCreateHashTable(NXPtrPrototype, 0, nil);
         
@@ -2815,15 +2818,16 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
         for (i = 0; i < count; i++) {
             Class cls = (Class)classlist[i];
+            // 对 class 做进一步处理，readClass 主要操作 ro 和 rw 结构体
             Class newCls = readClass(cls, headerIsBundle, headerIsPreoptimized);
 
+            // 初始化所有懒加载的类需要的内存空间
             if (newCls != cls  &&  newCls) {
                 // Class was moved but not deleted. Currently this occurs 
                 // only when the new class resolved a future class.
                 // Non-lazily realize the class below.
-                resolvedFutureClasses = (Class *)
-                    realloc(resolvedFutureClasses, 
-                            (resolvedFutureClassCount+1) * sizeof(Class));
+                resolvedFutureClasses = (Class *)realloc(resolvedFutureClasses, (resolvedFutureClassCount+1) * sizeof(Class));
+                // 将懒加载的类添加在数组中
                 resolvedFutureClasses[resolvedFutureClassCount++] = newCls;
             }
         }
@@ -2835,6 +2839,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     // Class list and nonlazy class list remain unremapped.
     // Class refs and super refs are remapped for message dispatching.
     
+    // 将未 map 的 Class 和 Super Class 重新映射，被 remap 的类都是非懒加载的类
     if (!noClassesRemapped()) {
         for (EACH_HEADER) {
             Class *classrefs = _getObjc2ClassRefs(hi, &count);
@@ -2855,6 +2860,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     static size_t UnfixedSelectors;
     {
         mutex_locker_t lock(selLock);
+        // 将所有的 SEL 都注册到 hash 表中
         for (EACH_HEADER) {
             if (hi->isPreoptimized()) continue;
             
@@ -2872,6 +2878,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
 
 #if SUPPORT_FIXUP
     // Fix up old objc_msgSend_fixup call sites
+    // 修复旧的函数指针调用遗留问题
     for (EACH_HEADER) {
         message_ref_t *refs = _getObjc2MessageRefs(hi, &count);
         if (count == 0) continue;
@@ -2881,6 +2888,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                          "call sites in %s", count, hi->fname());
         }
         for (i = 0; i < count; i++) {
+            // 将常用的 alloc objc_msgSend 等函数指针进行注册，并 fix 为新的函数指针
             fixupMessageRef(refs+i);
         }
     }
@@ -2888,6 +2896,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     ts.log("IMAGE TIMES: fix up objc_msgSend_fixup");
 #endif
 
+    // 遍历所有的协议，并将协议添加到 protocols() hash 表中
     // Discover protocols. Fix up protocol refs.
     for (EACH_HEADER) {
         extern objc_class OBJC_CLASS_$_Protocol;
@@ -2909,6 +2918,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     // Fix up @protocol references
     // Preoptimized images may have the right 
     // answer already but we don't know for sure.
+    // 修复协议列表引用
     for (EACH_HEADER) {
         protocol_t **protolist = _getObjc2ProtocolRefs(hi, &count);
         for (i = 0; i < count; i++) {
@@ -2919,9 +2929,9 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     ts.log("IMAGE TIMES: fix up @protocol references");
 
     // Realize non-lazy classes (for +load methods and static instances)
+    // 实现非懒加载的类
     for (EACH_HEADER) {
-        classref_t *classlist = 
-            _getObjc2NonlazyClassList(hi, &count);
+        classref_t *classlist = _getObjc2NonlazyClassList(hi, &count);
         for (i = 0; i < count; i++) {
             Class cls = remapClass(classlist[i]);
             if (!cls) continue;
@@ -2961,6 +2971,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     ts.log("IMAGE TIMES: realize non-lazy classes");
 
     // Realize newly-resolved future classes, in case CF manipulates them
+    // 实现所有懒加载的类
     if (resolvedFutureClasses) {
         for (i = 0; i < resolvedFutureClassCount; i++) {
             Class cls = resolvedFutureClasses[i];
