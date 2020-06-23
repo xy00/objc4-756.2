@@ -2427,11 +2427,11 @@ load_images(const char *path __unused, const struct mach_header *mh)
     // Discover load methods
     {
         mutex_locker_t lock2(runtimeLock);
-        prepare_load_methods((const headerType *)mh);
+        prepare_load_methods((const headerType *)mh); // 准备 load 方法
     }
 
     // Call +load methods (without runtimeLock - re-entrant)
-    call_load_methods();
+    call_load_methods(); // 调用 load 方法
 }
 
 
@@ -3132,13 +3132,13 @@ static void schedule_class_load(Class cls)
     if (!cls) return;
     assert(cls->isRealized());  // _read_images should realize
 
-    if (cls->data()->flags & RW_LOADED) return;
+    if (cls->data()->flags & RW_LOADED) return; // 判断是否已经处理了 load 方法
 
     // Ensure superclass-first ordering
-    schedule_class_load(cls->superclass);
+    schedule_class_load(cls->superclass);   // 父类的 load 方法加在前面
 
-    add_class_to_loadable_list(cls);
-    cls->setInfo(RW_LOADED); 
+    add_class_to_loadable_list(cls);    // 添加 load 方法
+    cls->setInfo(RW_LOADED);    // 标识已经处理了 load 方法
 }
 
 // Quick scan for +load methods that doesn't take a lock.
@@ -3156,24 +3156,23 @@ void prepare_load_methods(const headerType *mhdr)
 
     runtimeLock.assertLocked();
 
-    classref_t *classlist = 
-        _getObjc2NonlazyClassList(mhdr, &count);
+    classref_t *classlist = _getObjc2NonlazyClassList(mhdr, &count);    // 获取所有非懒加载类的列表
     for (i = 0; i < count; i++) {
-        schedule_class_load(remapClass(classlist[i]));
+        schedule_class_load(remapClass(classlist[i])); // 设置 class 的调用列表，如果父类有 load 方法，保证父类加在列表的前面
     }
 
-    category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count);
+    category_t **categorylist = _getObjc2NonlazyCategoryList(mhdr, &count); // 获取所有的非懒加载 Category 列表
     for (i = 0; i < count; i++) {
         category_t *cat = categorylist[i];
         Class cls = remapClass(cat->cls);
-        if (!cls) continue;  // category for ignored weak-linked class
+        if (!cls) continue;  // category for ignored weak-linked class 忽略弱链接的类别？
         if (cls->isSwiftStable()) {
             _objc_fatal("Swift class extensions and categories on Swift "
                         "classes are not allowed to have +load methods");
         }
-        realizeClassWithoutSwift(cls);
+        realizeClassWithoutSwift(cls); // 实例化所属的类
         assert(cls->ISA()->isRealized());
-        add_category_to_loadable_list(cat);
+        add_category_to_loadable_list(cat); // 设置 category 的调用列表
     }
 }
 

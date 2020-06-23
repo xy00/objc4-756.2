@@ -65,7 +65,7 @@ void add_class_to_loadable_list(Class cls)
 
     loadMethodLock.assertLocked();
 
-    method = cls->getLoadMethod();
+    method = cls->getLoadMethod(); // 获取 load 方法
     if (!method) return;  // Don't bother if cls has no +load method
     
     if (PrintLoading) {
@@ -75,10 +75,7 @@ void add_class_to_loadable_list(Class cls)
     
     if (loadable_classes_used == loadable_classes_allocated) {
         loadable_classes_allocated = loadable_classes_allocated*2 + 16;
-        loadable_classes = (struct loadable_class *)
-            realloc(loadable_classes,
-                              loadable_classes_allocated *
-                              sizeof(struct loadable_class));
+        loadable_classes = (struct loadable_class *) realloc(loadable_classes, loadable_classes_allocated *sizeof(struct loadable_class));
     }
     
     loadable_classes[loadable_classes_used].cls = cls;
@@ -99,7 +96,7 @@ void add_category_to_loadable_list(Category cat)
 
     loadMethodLock.assertLocked();
 
-    method = _category_getLoadMethod(cat);
+    method = _category_getLoadMethod(cat);  // 获取 load 方法
 
     // Don't bother if cat has no +load method
     if (!method) return;
@@ -111,10 +108,7 @@ void add_category_to_loadable_list(Category cat)
     
     if (loadable_categories_used == loadable_categories_allocated) {
         loadable_categories_allocated = loadable_categories_allocated*2 + 16;
-        loadable_categories = (struct loadable_category *)
-            realloc(loadable_categories,
-                              loadable_categories_allocated *
-                              sizeof(struct loadable_category));
+        loadable_categories = (struct loadable_category *)realloc(loadable_categories,loadable_categories_allocated *sizeof(struct loadable_category));
     }
 
     loadable_categories[loadable_categories_used].cat = cat;
@@ -334,7 +328,7 @@ static bool call_category_loads(void)
 * Locking: loadMethodLock must be held by the caller 
 *   All other locks must not be held.
 **********************************************************************/
-void call_load_methods(void)
+void call_load_methods(void) // load 方法是直接调用的，没有走 objc_msgSend 函数
 {
     static bool loading = NO;
     bool more_categories;
@@ -349,12 +343,12 @@ void call_load_methods(void)
 
     do {
         // 1. Repeatedly call class +loads until there aren't any more
-        while (loadable_classes_used > 0) {
+        while (loadable_classes_used > 0) { // 先调用 class 的 load 方法
             call_class_loads();
         }
 
         // 2. Call category +loads ONCE
-        more_categories = call_category_loads();
+        more_categories = call_category_loads();    // 调用 category 的 load 方法
 
         // 3. Run more +loads if there are classes OR more untried categories
     } while (loadable_classes_used > 0  ||  more_categories);
