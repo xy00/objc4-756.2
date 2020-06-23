@@ -767,6 +767,7 @@ class list_array_tt {
         }
     }
 
+    // 添加方法
     void attachLists(List* const * addedLists, uint32_t addedCount) {
         if (addedCount == 0) return;
 
@@ -776,10 +777,8 @@ class list_array_tt {
             uint32_t newCount = oldCount + addedCount;
             setArray((array_t *)realloc(array(), array_t::byteSize(newCount)));
             array()->count = newCount;
-            memmove(array()->lists + addedCount, array()->lists, 
-                    oldCount * sizeof(array()->lists[0]));
-            memcpy(array()->lists, addedLists, 
-                   addedCount * sizeof(array()->lists[0]));
+            memmove(array()->lists + addedCount, array()->lists, oldCount * sizeof(array()->lists[0]));
+            memcpy(array()->lists, addedLists, addedCount * sizeof(array()->lists[0]));
         }
         else if (!list  &&  addedCount == 1) {
             // 0 lists -> 1 list
@@ -793,8 +792,7 @@ class list_array_tt {
             setArray((array_t *)malloc(array_t::byteSize(newCount)));
             array()->count = newCount;
             if (oldList) array()->lists[addedCount] = oldList;
-            memcpy(array()->lists, addedLists, 
-                   addedCount * sizeof(array()->lists[0]));
+            memcpy(array()->lists, addedLists, addedCount * sizeof(array()->lists[0]));
         }
     }
 

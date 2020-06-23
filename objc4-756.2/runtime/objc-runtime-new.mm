@@ -770,15 +770,12 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     if (!cats) return;
     if (PrintReplacedMethods) printReplacements(cls, cats);
 
-    bool isMeta = cls->isMetaClass();
+    bool isMeta = cls->isMetaClass();   // 是否是元类
 
     // fixme rearrange to remove these intermediate allocations
-    method_list_t **mlists = (method_list_t **)
-        malloc(cats->count * sizeof(*mlists));
-    property_list_t **proplists = (property_list_t **)
-        malloc(cats->count * sizeof(*proplists));
-    protocol_list_t **protolists = (protocol_list_t **)
-        malloc(cats->count * sizeof(*protolists));
+    method_list_t **mlists = (method_list_t **) malloc(cats->count * sizeof(*mlists)); // 初始化方法列表
+    property_list_t **proplists = (property_list_t **) malloc(cats->count * sizeof(*proplists));    // 初始化属性列表
+    protocol_list_t **protolists = (protocol_list_t **) malloc(cats->count * sizeof(*protolists));  // 初始化协议列表
 
     // Count backwards through cats to get newest categories first
     int mcount = 0;
@@ -786,6 +783,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
     int protocount = 0;
     int i = cats->count;
     bool fromBundle = NO;
+    // 给上面初始化的列表赋值
     while (i--) {
         auto& entry = cats->list[i];
 
@@ -795,8 +793,7 @@ attachCategories(Class cls, category_list *cats, bool flush_caches)
             fromBundle |= entry.hi->isBundle();
         }
 
-        property_list_t *proplist = 
-            entry.cat->propertiesForMeta(isMeta, entry.hi);
+        property_list_t *proplist = entry.cat->propertiesForMeta(isMeta, entry.hi);
         if (proplist) {
             proplists[propcount++] = proplist;
         }
@@ -912,12 +909,14 @@ static void remethodizeClass(Class cls)
     isMeta = cls->isMetaClass();
 
     // Re-methodizing: check for more categories
+    // 根据 class 获取 category 列表
     if ((cats = unattachedCategoriesForClass(cls, false/*not realizing*/))) {
         if (PrintConnecting) {
             _objc_inform("CLASS: attaching categories to class '%s' %s", 
                          cls->nameForLogging(), isMeta ? "(meta)" : "");
         }
         
+        // class 关联 category
         attachCategories(cls, cats, true /*flush caches*/);        
         free(cats);
     }
@@ -1925,7 +1924,7 @@ static Class realizeClassWithoutSwift(Class cls)
 
     // fixme verify class is not in an un-dlopened part of the shared cache?
 
-    ro = (const class_ro_t *)cls->data();
+    ro = (const class_ro_t *)cls->data(); // ro 是只读的
     if (ro->flags & RO_FUTURE) {    // rw 已经分配好
         // This was a future class. rw data is already allocated.
         rw = cls->data();
@@ -1935,7 +1934,7 @@ static Class realizeClassWithoutSwift(Class cls)
         // Normal class. Allocate writeable class data.
         rw = (class_rw_t *)calloc(sizeof(class_rw_t), 1); // 初始化 rw
         rw->ro = ro;    // 将 ro 赋值给 rw 中的 ro 字段
-        rw->flags = RW_REALIZED|RW_REALIZING;   // 更细标识
+        rw->flags = RW_REALIZED|RW_REALIZING;   // 更新标识
         cls->setData(rw);
     }
 
@@ -2964,6 +2963,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                 // We can't disallow all Swift classes because of
                 // classes like Swift.__EmptyArrayStorage
             }
+            // 初始化 rw 和 ro
             realizeClassWithoutSwift(cls);
         }
     }
@@ -2987,7 +2987,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
     ts.log("IMAGE TIMES: realize future classes");
 
     // Discover categories.
-    // 处理 ccategory
+    // 处理 category
     for (EACH_HEADER) {
         category_t **catlist = _getObjc2CategoryList(hi, &count);
         bool hasClassProperties = hi->info()->hasCategoryClassProperties();
@@ -3015,7 +3015,7 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
             bool classExists = NO;
             if (cat->instanceMethods ||  cat->protocols  ||  cat->instanceProperties) 
             {
-                addUnattachedCategoryForClass(cat, cls, hi);
+                addUnattachedCategoryForClass(cat, cls, hi);    // 关联 class 和 category 列表
                 if (cls->isRealized()) {
                     remethodizeClass(cls);
                     classExists = YES;
@@ -3027,10 +3027,12 @@ void _read_images(header_info **hList, uint32_t hCount, int totalClasses, int un
                 }
             }
 
-            if (cat->classMethods  ||  cat->protocols  
-                ||  (hasClassProperties && cat->_classProperties)) 
+            // 静态方法
+            // 协议
+            // 静态属性
+            if (cat->classMethods  ||  cat->protocols  ||  (hasClassProperties && cat->_classProperties))
             {
-                addUnattachedCategoryForClass(cat, cls->ISA(), hi);
+                addUnattachedCategoryForClass(cat, cls->ISA(), hi); // 关联 meta class 的 category 列表
                 if (cls->ISA()->isRealized()) {
                     remethodizeClass(cls->ISA());
                 }
