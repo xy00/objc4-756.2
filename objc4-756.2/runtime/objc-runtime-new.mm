@@ -5311,6 +5311,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
         // runtimeLock may have been dropped but is now locked again
     }
 
+    // 第一次调用当前类的时，执行 initialize 的代码
     if (initialize && !cls->isInitialized()) {
         cls = initializeAndLeaveLocked(cls, inst, runtimeLock);
         // runtimeLock may have been dropped but is now locked again

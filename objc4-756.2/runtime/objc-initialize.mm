@@ -495,6 +495,7 @@ void initializeNonMetaClass(Class cls)
         initializeNonMetaClass(supercls);
     }
     
+    // 设置标识 CLS_INITIALIZING
     // Try to atomically set CLS_INITIALIZING.
     {
         monitor_locker_t lock(classInitLock);
@@ -534,6 +535,7 @@ void initializeNonMetaClass(Class cls)
         @try
 #endif
         {
+            // 通过 objc_msgSend 调用 initialize 方法
             callInitialize(cls);
 
             if (PrintInitializing) {
