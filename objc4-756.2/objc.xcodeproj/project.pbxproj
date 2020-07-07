@@ -122,6 +122,7 @@
 		9672F7EE14D5F488007CEC96 /* NSObject.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9672F7ED14D5F488007CEC96 /* NSObject.mm */; };
 		BB24BB60248E324F004F3287 /* MethodTest.m in Sources */ = {isa = PBXBuildFile; fileRef = BB24BB5F248E324F004F3287 /* MethodTest.m */; };
 		BB24BB63248E328B004F3287 /* SubMethodTest.m in Sources */ = {isa = PBXBuildFile; fileRef = BB24BB62248E328B004F3287 /* SubMethodTest.m */; };
+		BB429BBA24B469300071EDF7 /* NSObject+Test.m in Sources */ = {isa = PBXBuildFile; fileRef = BB429BB924B469300071EDF7 /* NSObject+Test.m */; };
 		E8923DA5116AB2820071B552 /* objc-block-trampolines.mm in Sources */ = {isa = PBXBuildFile; fileRef = E8923DA0116AB2820071B552 /* objc-block-trampolines.mm */; };
 		F9BCC71B205C68E800DD9AFC /* objc-blocktramps-arm64.s in Sources */ = {isa = PBXBuildFile; fileRef = 8379996D13CBAF6F007C2B5F /* objc-blocktramps-arm64.s */; };
 /* End PBXBuildFile section */
@@ -252,6 +253,8 @@
 		BB24BB5F248E324F004F3287 /* MethodTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MethodTest.m; sourceTree = "<group>"; };
 		BB24BB61248E328B004F3287 /* SubMethodTest.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SubMethodTest.h; sourceTree = "<group>"; };
 		BB24BB62248E328B004F3287 /* SubMethodTest.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SubMethodTest.m; sourceTree = "<group>"; };
+		BB429BB824B469300071EDF7 /* NSObject+Test.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSObject+Test.h"; sourceTree = "<group>"; };
+		BB429BB924B469300071EDF7 /* NSObject+Test.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSObject+Test.m"; sourceTree = "<group>"; };
 		BC8B5D1212D3D48100C78A5B /* libauto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libauto.dylib; path = /usr/lib/libauto.dylib; sourceTree = "<absolute>"; };
 		D2AAC0630554660B00DB518D /* libobjc.A.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; includeInIndex = 0; path = libobjc.A.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
 		E8923D9C116AB2820071B552 /* objc-blocktramps-i386.s */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = "objc-blocktramps-i386.s"; path = "runtime/objc-blocktramps-i386.s"; sourceTree = "<group>"; };
@@ -369,6 +372,8 @@
 			isa = PBXGroup;
 			children = (
 				6F8ADBF42314D1F300E235A9 /* main.m */,
+				BB429BB824B469300071EDF7 /* NSObject+Test.h */,
+				BB429BB924B469300071EDF7 /* NSObject+Test.m */,
 				BB24BB5E248E324F004F3287 /* MethodTest.h */,
 				BB24BB5F248E324F004F3287 /* MethodTest.m */,
 				BB24BB61248E328B004F3287 /* SubMethodTest.h */,
@@ -695,6 +700,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB24BB60248E324F004F3287 /* MethodTest.m in Sources */,
+				BB429BBA24B469300071EDF7 /* NSObject+Test.m in Sources */,
 				6F8ADBF52314D1F300E235A9 /* main.m in Sources */,
 				BB24BB63248E328B004F3287 /* SubMethodTest.m in Sources */,
 			);

@@ -9,6 +9,7 @@
 #import "MethodTest.h"
 #import "SubMethodTest.h"
 #import <objc/runtime.h>
+#import "NSObject+Test.h"
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
@@ -108,6 +109,16 @@ int main(int argc, const char * argv[]) {
             NSString *value = [obj valueForKey:@"pwd"];
             NSLog(@"value: %@", value);
         }
+        
+        
+        BOOL res1 = [(id)[NSObject class] isKindOfClass:[NSObject class]];
+        BOOL res2 = [(id)[NSObject class] isMemberOfClass:[NSObject class]];
+        BOOL res3 = [(id)[MethodTest class] isKindOfClass:[MethodTest class]];
+        BOOL res4 = [(id)[MethodTest class] isMemberOfClass:[MethodTest class]];
+        NSLog(@"%@ ,%@ ,%@ ,%@ ", @(res1), @(res2), @(res3), @(res4));
+        
+        [NSObject test];
+//        [[NSObject new] test];
     }
     return 0;
 }

@@ -2034,14 +2034,17 @@ void arr_init(void)
     return [self class]->superclass;
 }
 
+// 对比的是 ISA（元类） 和 cls
 + (BOOL)isMemberOfClass:(Class)cls {
     return object_getClass((id)self) == cls;
 }
 
+// 对比的是 ISA 和 cls
 - (BOOL)isMemberOfClass:(Class)cls {
     return [self class] == cls;
 }
 
+// 对比的是 ISA（元类） 以及 ISA 的 superclass（元类）和 cls
 + (BOOL)isKindOfClass:(Class)cls {
     for (Class tcls = object_getClass((id)self); tcls; tcls = tcls->superclass) {
         if (tcls == cls) return YES;
@@ -2049,6 +2052,7 @@ void arr_init(void)
     return NO;
 }
 
+// 对比的是 ISA 以及 ISA 的 superclass 和 cls
 - (BOOL)isKindOfClass:(Class)cls {
     for (Class tcls = [self class]; tcls; tcls = tcls->superclass) {
         if (tcls == cls) return YES;
