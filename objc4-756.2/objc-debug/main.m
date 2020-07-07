@@ -11,6 +11,21 @@
 #import <objc/runtime.h>
 #import "NSObject+Test.h"
 
+@interface Sark : NSObject
+
+@property (nonatomic, copy) NSString *name;
+
+@end
+
+@implementation Sark
+
+- (void)speak
+{
+    NSLog(@"speak");
+//    NSLog(@"my name's %@", self.name);
+}
+@end
+
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
         // insert code here...
@@ -119,6 +134,10 @@ int main(int argc, const char * argv[]) {
         
         [NSObject test];
 //        [[NSObject new] test];
+        
+        id cls = [Sark class];
+        void *obj = &cls;
+        [(__bridge id)obj speak];
     }
     return 0;
 }
