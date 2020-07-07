@@ -4992,6 +4992,7 @@ static method_t *findMethodInSortedMethodList(SEL key, const method_list_t *list
 * fixme
 * Locking: runtimeLock must be read- or write-locked by the caller
 **********************************************************************/
+// 根据传去的 SEL 查找对应的 method_t
 static method_t *search_method_list(const method_list_t *mlist, SEL sel)
 {
     int methodListIsFixedUp = mlist->isFixedUp();
@@ -5028,12 +5029,13 @@ getMethodNoSuper_nolock(Class cls, SEL sel)
     assert(cls->isRealized());
     // fixme nil cls? 
     // fixme nil sel?
-
+    // 从 methodList 列表中，从头开始遍历，每次编译后向后移动一位地址
     for (auto mlists = cls->data()->methods.beginLists(), 
               end = cls->data()->methods.endLists(); 
          mlists != end;
          ++mlists)
     {
+        // 对 sel 参数和 method_t 做匹配，如果匹配上则返回
         method_t *m = search_method_list(*mlists, sel);
         if (m) return m;
     }
@@ -5116,6 +5118,7 @@ static void resolveClassMethod(Class cls, SEL sel, id inst)
     assert(cls->isRealized());
     assert(cls->isMetaClass());
 
+    // 查找是否实现了 SEL_resolveClassMethod 方法
     if (! lookUpImpOrNil(cls, SEL_resolveClassMethod, inst, 
                          NO/*initialize*/, YES/*cache*/, NO/*resolver*/)) 
     {
@@ -5133,6 +5136,7 @@ static void resolveClassMethod(Class cls, SEL sel, id inst)
                         nonmeta->nameForLogging(), nonmeta);
         }
     }
+    // 执行 SEL_resolveClassMethod 方法，该方法中应该添加 sel
     BOOL (*msg)(Class, SEL, SEL) = (typeof(msg))objc_msgSend;
     bool resolved = msg(nonmeta, SEL_resolveClassMethod, sel);
 
@@ -5171,6 +5175,7 @@ static void resolveInstanceMethod(Class cls, SEL sel, id inst)
     runtimeLock.assertUnlocked();
     assert(cls->isRealized());
 
+    // 元类中是否实现了 SEL_resolveInstanceMethod 方法，如果未实现直接返回
     if (! lookUpImpOrNil(cls->ISA(), SEL_resolveInstanceMethod, cls, 
                          NO/*initialize*/, YES/*cache*/, NO/*resolver*/)) 
     {
@@ -5178,6 +5183,7 @@ static void resolveInstanceMethod(Class cls, SEL sel, id inst)
         return;
     }
 
+    // 执行 SEL_resolveInstanceMethod 方法，该方法应该动态添加 sel
     BOOL (*msg)(Class, SEL, SEL) = (typeof(msg))objc_msgSend;
     bool resolved = msg(cls, SEL_resolveInstanceMethod, sel);
 
@@ -5216,11 +5222,13 @@ static void resolveMethod(Class cls, SEL sel, id inst)
     runtimeLock.assertUnlocked();
     assert(cls->isRealized());
 
+    // 如果不是元类
     if (! cls->isMetaClass()) {
         // try [cls resolveInstanceMethod:sel]
         resolveInstanceMethod(cls, sel, inst);
     } 
-    else {
+    else { // 元类
+        // 先尝试 resolveClassMethod 如果没有成功，再尝试执行 resolveInstanceMethod
         // try [nonMetaClass resolveClassMethod:sel]
         // and [cls resolveInstanceMethod:sel]
         resolveClassMethod(cls, sel, inst);
@@ -5288,6 +5296,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     runtimeLock.assertUnlocked();
 
+    // 从缓存中查找
     // Optimistic cache lookup
     if (cache) {
         imp = cache_getImp(cls, sel);
@@ -5306,6 +5315,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     runtimeLock.lock();
     checkIsKnownClass(cls);
 
+    // 判断类是否已经被创建，如果没有被创建则将类实例化
     if (!cls->isRealized()) {
         cls = realizeClassMaybeSwiftAndLeaveLocked(cls, runtimeLock);
         // runtimeLock may have been dropped but is now locked again
@@ -5327,11 +5337,12 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     runtimeLock.assertLocked();
 
     // Try this class's cache.
-
+    // 尝试从缓存中查找
     imp = cache_getImp(cls, sel);
     if (imp) goto done;
 
     // Try this class's method lists.
+    // 从方法列表中查找
     {
         Method meth = getMethodNoSuper_nolock(cls, sel);
         if (meth) {
@@ -5354,6 +5365,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
             }
             
             // Superclass cache.
+            // 从父类的缓存中查找
             imp = cache_getImp(curClass, sel);
             if (imp) {
                 if (imp != (IMP)_objc_msgForward_impcache) {
@@ -5370,6 +5382,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
             }
             
             // Superclass method list.
+            // 从父类的方法列表中查找
             Method meth = getMethodNoSuper_nolock(curClass, sel);
             if (meth) {
                 log_and_fill_cache(cls, meth->imp, sel, inst, curClass);
@@ -5380,9 +5393,10 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
     }
 
     // No implementation found. Try method resolver once.
-
+    // 如果没有找到、尝试动态解析。根据 triedResolver 字段可判断，动态解析只会执行一次
     if (resolver  &&  !triedResolver) {
         runtimeLock.unlock();
+        // 动态解析
         resolveMethod(cls, sel, inst);
         runtimeLock.lock();
         // Don't cache the result; we don't hold the lock so it may have 
@@ -5393,7 +5407,7 @@ IMP lookUpImpOrForward(Class cls, SEL sel, id inst,
 
     // No implementation found, and method resolver didn't help. 
     // Use forwarding.
-
+    // 如果 imp 没有找到，并且动态方法解析也没有处理，则进入动态消息转发阶段
     imp = (IMP)_objc_msgForward_impcache;
     cache_fill(cls, sel, imp, inst);
 
