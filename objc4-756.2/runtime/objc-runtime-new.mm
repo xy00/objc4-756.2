@@ -526,6 +526,7 @@ static void checkIsKnownClass(Class cls)
 * Records an unattached category.
 * Locking: runtimeLock must be held by the caller.
 **********************************************************************/
+// 向 Category hash 表中添加类和方法列表
 static void addUnattachedCategoryForClass(category_t *cat, Class cls, 
                                           header_info *catHeader)
 {
@@ -537,11 +538,9 @@ static void addUnattachedCategoryForClass(category_t *cat, Class cls,
 
     list = (category_list *)NXMapGet(cats, cls);
     if (!list) {
-        list = (category_list *)
-            calloc(sizeof(*list) + sizeof(list->list[0]), 1);
+        list = (category_list *)calloc(sizeof(*list) + sizeof(list->list[0]), 1);
     } else {
-        list = (category_list *)
-            realloc(list, sizeof(*list) + sizeof(list->list[0]) * (list->count + 1));
+        list = (category_list *)realloc(list, sizeof(*list) + sizeof(list->list[0]) * (list->count + 1));
     }
     list->list[list->count++] = (locstamped_category_t){cat, catHeader};
     NXMapInsert(cats, cls, list);
@@ -899,6 +898,7 @@ static void methodizeClass(Class cls)
 * Updates method caches for cls and its subclasses.
 * Locking: runtimeLock must be held by the caller
 **********************************************************************/
+// 将 Category 的信息添加到 Class，包含 method、property、protocol
 static void remethodizeClass(Class cls)
 {
     category_list *cats;
@@ -910,6 +910,7 @@ static void remethodizeClass(Class cls)
 
     // Re-methodizing: check for more categories
     // 根据 class 获取 category 列表
+    // 并且将找到的对象从哈希表中删除
     if ((cats = unattachedCategoriesForClass(cls, false/*not realizing*/))) {
         if (PrintConnecting) {
             _objc_inform("CLASS: attaching categories to class '%s' %s", 
