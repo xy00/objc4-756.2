@@ -77,15 +77,17 @@ typedef DisguisedPtr<objc_object *> weak_referrer_t;
 // Therefore out_of_line_ness == 0b10 is used to mark the out-of-line state.
 #define REFERRERS_OUT_OF_LINE 2
 
+// 引用该对象的对象列表，联合。 引用个数小于 4，用 inline_referrers 数组。
+// 引用个数大于 4，用动态数组 weak_referrer_t *referrers
 struct weak_entry_t {
     DisguisedPtr<objc_object> referent;
     union {
         struct {
-            weak_referrer_t *referrers;
-            uintptr_t        out_of_line_ness : 2;
-            uintptr_t        num_refs : PTR_MINUS_2;
-            uintptr_t        mask;
-            uintptr_t        max_hash_displacement;
+            weak_referrer_t *referrers; // 弱引用该对象的对象地址的 hash 数组
+            uintptr_t        out_of_line_ness : 2;  // 是否使用动态 hash 数组标记位
+            uintptr_t        num_refs : PTR_MINUS_2;    // hash 数组中的元素个数
+            uintptr_t        mask;  // hash 数组长度 - 1，会参与 hash 计算
+            uintptr_t        max_hash_displacement; // 可能发生的 hash 冲突的最大次数，用于判断是否出现了逻辑错误
         };
         struct {
             // out_of_line_ness field is low bits of inline_referrers[1]
@@ -104,7 +106,7 @@ struct weak_entry_t {
 
     weak_entry_t(objc_object *newReferent, objc_object **newReferrer)
         : referent(newReferent)
-    {
+    {   // 构造方法
         inline_referrers[0] = newReferrer;
         for (int i = 1; i < WEAK_INLINE_COUNT; i++) {
             inline_referrers[i] = nil;
@@ -117,10 +119,10 @@ struct weak_entry_t {
  * and weak_entry_t structs as their values.
  */
 struct weak_table_t {
-    weak_entry_t *weak_entries;
-    size_t    num_entries;
-    uintptr_t mask;
-    uintptr_t max_hash_displacement;
+    weak_entry_t *weak_entries; // hash 数组，用来存储弱引用对象相关信息
+    size_t    num_entries;  // hash 数组中的元素个数
+    uintptr_t mask; // hash 数组长度 - 1，会参与 hash 计算（这个是 hash 数组的长度，不是元素个数）
+    uintptr_t max_hash_displacement; //可能发生的 hash 冲突的最大次数，用于判断是否实现了逻辑错误（hash 表中的冲突次数绝不会超过该值）
 };
 
 /// Adds an (object, weak pointer) pair to the weak table.

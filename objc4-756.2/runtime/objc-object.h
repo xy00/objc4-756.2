@@ -399,11 +399,17 @@ objc_object::rootIsDeallocating()
 inline void 
 objc_object::clearDeallocating()
 {
-    if (slowpath(!isa.nonpointer)) {
+    // 是否使用了 isa 优化，如果没有的话则需要清理对象存储在 SideTable 中的引用计数
+    if (slowpath(!isa.nonpointer))
+    {
         // Slow path for raw pointer isa.
         sidetable_clearDeallocating();
     }
-    else if (slowpath(isa.weakly_referenced  ||  isa.has_sidetable_rc)) {
+    // 使用了优化的 isa 引用计数
+    // 判断是否使用 SideTable 的辅助引用计数 has_sidetable_rc
+    // 判断是否有 weak 引用
+    else if (slowpath(isa.weakly_referenced  ||  isa.has_sidetable_rc))
+    {
         // Slow path for non-pointer isa with weak refs and/or side table data.
         clearDeallocating_slow();
     }

@@ -7167,7 +7167,7 @@ void *objc_destructInstance(id obj)
         // This order is important.
         if (cxx) object_cxxDestruct(obj);
         if (assoc) _object_remove_assocations(obj);
-        obj->clearDeallocating();
+        obj->clearDeallocating();   // 新切割出对象的相关引用
     }
 
     return obj;
